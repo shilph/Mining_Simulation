@@ -11,19 +11,19 @@ class SimulationLogger:
     _start_time_in_unix_tic = 0
     _sim_time_unit = 0
 
-    def __init__(self, start_time_in_unix_tic, sim_time_unit):
-        self._start_time_in_unix_tic = start_time_in_unix_tic
+    def __init__(self, start_time_in_unix_timestamp, sim_time_unit):
+        self._start_time_in_unix_tic = start_time_in_unix_timestamp
         self._sim_time_unit = sim_time_unit
         # TODO: init others.
 
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls) -> 'SimulationLogger':
         # TODO: Use singleton design to get a SimulationLogger instance.
         return cls._instance
 
-    def log(self, time_in_sim, message: str):
+    def log(self, unix_timsstamp, message: str):
         # Stores message to _log_queue
-        self._log_queue.put((time_in_sim, message))
+        self._log_queue.put((unix_timsstamp, message))
         pass
 
     def print_log(self):
