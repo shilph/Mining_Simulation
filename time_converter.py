@@ -1,4 +1,4 @@
-def convert_sim_time_to_real_time_in_mil_sec(sim_time_to_convert_in_minutes: int, sim_time_unit: int) -> int:
+def convert_sim_time_to_real_time_in_mil_sec(sim_time_to_convert_in_minutes: int, sim_time_unit: int) -> float:
     """Converts simulation time (minutes) to real time in mil seconds.
 
     :param sim_time_to_convert_in_minutes: simulation time in minutes
@@ -9,7 +9,7 @@ def convert_sim_time_to_real_time_in_mil_sec(sim_time_to_convert_in_minutes: int
     if sim_time_unit <= 0:
         # sim_time_unit has to be one of main.SIM_TIME_UNIT. But add a quick check just in case.
         raise ValueError('sim_time_unit must be positive integer')
-    return sim_time_to_convert_in_minutes * (1000 // sim_time_unit)
+    return sim_time_to_convert_in_minutes / sim_time_unit
 
 
 def convert_unix_time_to_sim_timestamp(unix_time_start: float, curr_unix_time: float, sim_time_unit: int) -> str:

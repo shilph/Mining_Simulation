@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from mining_control_center import MiningType, MiningControlCenter
+
+from const import MiningType
 from time_converter import convert_sim_time_to_real_time_in_mil_sec
 
 
@@ -12,7 +13,7 @@ class MiningTruck(ABC):
 
     def __init__(
             self,
-            control_center: MiningControlCenter,
+            control_center: "MiningControlCenter",
             name: str = "Truck",
             mining_type: MiningType = MiningType.HELIUM_3,
             sim_time_unit: int = 1):

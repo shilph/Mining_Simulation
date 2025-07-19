@@ -6,11 +6,11 @@ from time_converter import convert_sim_time_to_real_time_in_mil_sec, convert_uni
 class TestTimeConversionFunctions(unittest.TestCase):
     def test_convert_sim_time_to_real_time_in_mil_sec(self):
         # General positive tests
-        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(10, 1), 10000)
+        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(10, 1), 10)
         self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(0, 1), 0)
-        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(1, 10), 100)
-        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(10, 2), 5000)
-        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(50, 5), 10000)
+        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(1, 10), 0.1)
+        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(10, 2), 5)
+        self.assertEqual(convert_sim_time_to_real_time_in_mil_sec(50, 5), 10)
 
         # Check exceptions: sim_time_unit <= 0
         with self.assertRaises(ValueError):

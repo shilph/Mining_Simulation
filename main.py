@@ -1,3 +1,6 @@
+import asyncio
+import sys
+
 from mining_control_center import MiningControlCenter
 from typing import List, Optional
 
