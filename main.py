@@ -50,4 +50,4 @@ if __name__ == '__main__':
     mining_control_center = MiningControlCenter(n=num_trucks,
                                                 m=num_unload_stations,
                                                 sim_time_unit=sim_time_unit)
-    mining_control_center.run(test_duration)
+    asyncio.run(mining_control_center.run(test_duration))
