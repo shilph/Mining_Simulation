@@ -1,135 +1,127 @@
 import pytest
+import unittest
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from UnloadStations.h3_unload_station import H3UnloadStation
-import simulation_logger
 
 
-@pytest.mark.asyncio
-@patch("asyncio.sleep", return_value=None)
-async def test_unload_single_truck(mock_sleep, monkeypatch):
-    """Test H3UnloadStation.unload"""
-
-    # Mock: Add an Unload Station
-    control_center = MagicMock()
-    control_center.unload_complete = AsyncMock()
-    station = H3UnloadStation(control_center=control_center, name="H3 Unload Station X", sim_time_unit=5)
-    station._calculate_unload_time_in_simulation = MagicMock(return_value=1)
-
-    # Mock: Add a Truck
-    truck = MagicMock()
-    truck.name = "Truck X"
-
-    # Mock: Add a SimulationLogger. (Use monkeypatch)
-    log_msgs = []
+class TestH3UnloadStation(unittest.IsolatedAsyncioTestCase):
     class DummyLogger:
+        """Mock Logger for logging; Use this class instead of SimulationLogger."""
+
+        def __init__(self, log_msgs):
+            self._log_msgs = log_msgs
+
         def log(self, message):
-            log_msgs.append(message)
-    monkeypatch.setattr(
-        target=simulation_logger.SimulationLogger,
-        name="get_instance",
-        value=staticmethod(lambda: DummyLogger())
-    )
+            """Save log messages to log_msgs"""
+            self._log_msgs.append(message)
 
-    await station.unload(truck)
+    def setUp(self):
+        # Mock: Add an Unload Station
+        control_center = MagicMock()
+        control_center.unload_complete = AsyncMock()
+        self._station = H3UnloadStation(control_center=control_center, name="H3 Unload Station X", sim_time_unit=5)
+        self._station._calculate_unload_time_in_simulation = MagicMock(return_value=1)
+        self._log_msgs = []
+        self._logger = self.DummyLogger(self._log_msgs)
+        self._logger_patch = patch(
+            target="simulation_logger.SimulationLogger.get_instance",
+            return_value=self._logger,
+        )
+        self._logger_patch.start()
 
-    # Verification: check log messages
-    assert log_msgs[0] == "(+) H3 Unload Station X started unloading from Truck X."
-    assert log_msgs[1] == "(-) H3 Unload Station X finished unloading from Truck X."
+    def tearDown(self):
+        """Clean up."""
+        self._logger_patch.stop()
 
-    # Verification: unload_complete should call it once.
-    station._control_center.unload_complete.assert_awaited_once_with(truck=truck, station=station)
-
-
-@pytest.mark.asyncio
-@patch("asyncio.sleep", return_value=None)
-async def test_unload_multiple_trucks(mock_sleep, monkeypatch):
-    """Test H3UnloadStation.unload"""
-
-    # Mock: Add an Unload Station
-    control_center = MagicMock()
-    control_center.unload_complete = AsyncMock()
-    station = H3UnloadStation(control_center=control_center, name="H3 Unload Station X", sim_time_unit=5)
-    station._calculate_unload_time_in_simulation = MagicMock(return_value=1)
-
-    # Mock: Add a SimulationLogger. (Use monkeypatch)
-    log_msgs = []
-    class DummyLogger:
-        def log(self, message):
-            log_msgs.append(message)
-    monkeypatch.setattr(
-        target=simulation_logger.SimulationLogger,
-        name="get_instance",
-        value=staticmethod(lambda: DummyLogger())
-    )
-
-    # Mock: Add Trucks
-    trucks = []
-    for i in range(5):
+    @pytest.mark.asyncio
+    @patch("asyncio.sleep", return_value=None)
+    async def test_unload_single_truck(self, mock_sleep):
+        """Test H3UnloadStation.unload"""
+        # Mock: Add a Truck
         truck = MagicMock()
-        truck.name = f"Truck {i}"
-        trucks.append(truck)
+        truck.name = "Truck X"
 
-    for truck in trucks:
-        await station.unload(truck)
+        await self._station.unload(truck)
 
-    # Verification: check log messages
-    expected_messages = []
-    for i in range(5):
-        expected_messages.append(f"(+) H3 Unload Station X started unloading from Truck {i}.")
-        expected_messages.append(f"(-) H3 Unload Station X finished unloading from Truck {i}.")
-    assert log_msgs == expected_messages
+        # Verification: check log messages
+        assert self._log_msgs[0] == "(+) H3 Unload Station X started unloading from Truck X."
+        assert self._log_msgs[1] == "(-) H3 Unload Station X finished unloading from Truck X."
 
-    # Verification: unload_complete should call it 5 times.
-    calls = [call(truck=trucks[i], station=station) for i in range(5)]
-    station._control_center.unload_complete.assert_has_awaits(calls)
+        # Verification: unload_complete should call it once.
+        self._station._control_center.unload_complete.assert_awaited_once_with(
+            truck=truck, station=self._station
+        )
 
+        assert 1 == self._station._unloads
 
-@pytest.mark.asyncio
-@patch("asyncio.sleep", return_value=None)
-async def test_unload_truck_name_not_defined(mock_sleep, monkeypatch):
-    """Test H3UnloadStation.unload"""
+    @pytest.mark.asyncio
+    @patch("asyncio.sleep", return_value=None)
+    async def test_unload_multiple_trucks(self, mock_sleep):
+        """Test H3UnloadStation.unload"""
 
-    # Mock: Add an Unload Station
-    control_center = MagicMock()
-    control_center.unload_complete = AsyncMock()
-    station = H3UnloadStation(control_center=control_center, name="H3 Unload Station X", sim_time_unit=5)
-    station._calculate_unload_time_in_simulation = MagicMock(return_value=1)
+        # Mock: Add Trucks
+        trucks = []
+        for i in range(5):
+            truck = MagicMock()
+            truck.name = f"Truck {i}"
+            trucks.append(truck)
 
-    # Mock: Add a Truck
-    truck = MagicMock()
-    truck.name = None
+        for truck in trucks:
+            await self._station.unload(truck)
 
-    # Mock: Add a SimulationLogger. (Use monkeypatch)
-    log_msgs = []
-    class DummyLogger:
-        def log(self, message):
-            log_msgs.append(message)
-    monkeypatch.setattr(
-        target=simulation_logger.SimulationLogger,
-        name="get_instance",
-        value=staticmethod(lambda: DummyLogger())
-    )
+        # Verification: check log messages
+        expected_messages = []
+        for i in range(5):
+            expected_messages.append(
+                f"(+) H3 Unload Station X started unloading from Truck {i}."
+            )
+            expected_messages.append(
+                f"(-) H3 Unload Station X finished unloading from Truck {i}."
+            )
+        assert self._log_msgs == expected_messages
 
-    await station.unload(truck)
+        # Verification: unload_complete should call it 5 times.
+        calls = [call(truck=trucks[i], station=self._station) for i in range(5)]
+        self._station._control_center.unload_complete.assert_has_awaits(calls)
 
-    # Verification: check log messages
-    assert log_msgs[0] == "(+) H3 Unload Station X started unloading from Unknown Truck."
-    assert log_msgs[1] == "(-) H3 Unload Station X finished unloading from Unknown Truck."
+        assert 5 == self._station._unloads
 
-    # Verification: unload_complete should call it once.
-    station._control_center.unload_complete.assert_awaited_once_with(truck=truck, station=station)
+    @pytest.mark.asyncio
+    @patch("asyncio.sleep", return_value=None)
+    async def test_unload_truck_name_not_defined(self, mock_sleep):
+        """Test H3UnloadStation.unload"""
 
+        # Mock: Add a Truck
+        truck = MagicMock()
+        truck.name = None
 
-@patch("asyncio.sleep", return_value=None)
-def test_verify_unload_time(mock_sleep):
-    # Note: Instead of adding a unit test file for unload_station, I just added to here...
-    # Verify Time unit: 1, 2, 5, 10
-    for time_unit, expected in [[1, 5], [2, 2.5], [5, 1], [10, 0.5]]:
-        _test_verify_unload_time_for_time_unit_x(time_unit=time_unit, expected=expected)
+        await self._station.unload(truck)
 
+        # Verification: check log messages
+        assert (self._log_msgs[0] == "(+) H3 Unload Station X started unloading from Unknown Truck.")
+        assert (self._log_msgs[1] == "(-) H3 Unload Station X finished unloading from Unknown Truck.")
 
-def _test_verify_unload_time_for_time_unit_x(time_unit: int, expected: float):
-    control_center = MagicMock()
-    station = H3UnloadStation(control_center=control_center, sim_time_unit=time_unit)
-    assert expected == station._calculate_unload_time_in_simulation()
+        # Verification: unload_complete should call it once.
+        self._station._control_center.unload_complete.assert_awaited_once_with(
+            truck=truck, station=self._station
+        )
+
+        assert 1 == self._station._unloads
+
+    @patch("asyncio.sleep", return_value=None)
+    def test_verify_unload_time(self, mock_sleep):
+        """Test: UnloadStation._calculate_unload_time_in_simulation."""
+        # Verify Time unit: 1, 2, 5, 10
+        for time_unit, expected in [[1, 5], [2, 2.5], [5, 1], [10, 0.5]]:
+            self._test_verify_unload_time_for_time_unit_x(time_unit=time_unit, expected=expected)
+
+    def _test_verify_unload_time_for_time_unit_x(self, time_unit: int, expected: float) -> None:
+        """Check the calculated unload time is correct.
+
+        :param time_unit: simulation time unit.
+        :param expected: expected unload time.
+        """
+        control_center = MagicMock()
+        station = H3UnloadStation(control_center=control_center, sim_time_unit=time_unit)
+        assert expected == station._calculate_unload_time_in_simulation()
